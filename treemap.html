@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treemap Diagram</title>
+    <link rel="stylesheet" href="treemap.css">
+    <!-- <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js" defer></script> -->
+</head>
+<body>
+    <h1 id="title">Video Game Sales</h1>
+    <p id="description">Top 100 Most Sold Video Games Grouped by Platform</p>
+
+    <div id="container">
+        <svg id="canvas"></svg>
+
+        <div id="bottom">
+            <div id="tooltip"></div>
+
+            <svg id="legend">
+                <g>
+                    <rect class="legend-item" x="10" y="0" width="40" height="40" fill="gold"></rect>
+                    <text x="60" y="20" fill="white">Action</text>
+                </g>
+                <g>
+                    <rect class="legend-item" x="10" y="40" width="40" height="40" fill="blue"></rect>
+                    <text x="60" y="60" fill="white">Drama</text>
+                </g>
+                <g>
+                    <rect class="legend-item" x="10" y="80" width="40" height="40" fill="Goldenrod"></rect>
+                    <text x="60" y="100" fill="white">Adventure</text>
+                </g>
+                <g>
+                    <rect class="legend-item" x="10" y="120" width="40" height="40" fill="yellow"></rect>
+                    <text x="60" y="140" fill="white">Family</text>
+                </g>
+                <g>
+                    <rect class="legend-item" x="10" y="160" width="40" height="40" fill="SeaGreen"></rect>
+                    <text x="60" y="180" fill="white">Animation</text>
+                </g>
+                <g>
+                    <rect class="legend-item" x="10" y="200" width="40" height="40" fill="Teal"></rect>
+                    <text x="60" y="220" fill="white">Comedy</text>
+                </g>
+                <g>
+                    <rect class="legend-item" x="10" y="240" width="40" height="40" fill="Gray"></rect>
+                    <text x="60" y="260" fill="white">Biography</text>
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <script defer src="script.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script>
+        let movieDataUrl = "https://cdn.freecodecamp.org/testable-projects-fcc/data/tree_map/movie-data.json";
+        let movieData;
+        let canvas = d3.select("#canvas");
+        let tooltip = d3.select("#tooltip"); 
+
+        let drawTreeMap = () => {
+            let hierarchy = d3.hierarchy(movieData, (node) => {
+                return node["children"]
+            }).sum((node) => {
+                return node["value"]
+            }).sort((node1, node2) => {
+                return node1["value"] - node2["value"]
+            });
+
+            let createTreeMap = d3.treemap().size([1000, 600])
+            createTreeMap(hierarchy);
+
+            let movieTiles = hierarchy.leaves();
+
+            let block = canvas.selectAll("g")
+                                .data(movieTiles)
+                                .enter()
+                                .append("g")
+                                .attr("transform", (movie) => {
+                                    return `translate(${movie["x0"]}, ${movie["y0"]})`
+                                });
+                        
+            block.append("rect")
+                .attr("class", "tile")
+                .attr("fill", (movie) => {
+                    let category = movie["data"]["category"];
+                    const colorMap = {
+                        "Action": "gold",
+                        "Drama": "blue",
+                        "Adventure": "Goldenrod",
+                        "Family": "yellow",
+                        "Animation": "SeaGreen",
+                        "Comedy": "Teal",
+                        "Biography": "Gray"
+                    };
+                    return colorMap[category];
+                })
+                .attr("data-name", (movie) => movie["data"]["name"])
+                .attr("data-category", (movie) => movie["data"]["category"])
+                .attr("data-value", (movie) => movie["data"]["value"])
+                .attr("width", (movie) => movie["x1"] - movie["x0"])
+                .attr("height", (movie) => movie["y1"] - movie["y0"])
+                .on("mouseover", (movie) => {
+                    tooltip.transition().style("visibility", "visible");
+                    let revenue = movie["data"]["value"].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    tooltip.html(`$ ${revenue}<hr /> ${movie["data"]["name"]}`);
+                    tooltip.attr("data-value", movie["data"]["value"]);
+                })
+                .on("mouseout", (movie) => {
+                    tooltip.transition().style("visibility", "hidden")
+                });
+
+            block.append("text")
+                .text((movie) => movie["data"]["name"])
+                .attr("x", 5)
+                .attr("y", 20)
+        };
+
+        d3.json(movieDataUrl).then(
+            (data, error) => {
+                if(error) {
+                    console.log(error);
+                }
+                else {
+                    movieData = data;
+                    console.log(movieData);
+                    drawTreeMap();
+                }
+            }
+        )
+    </script>
+</body>
+</html>
